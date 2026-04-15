@@ -16,8 +16,6 @@ export type TerrainMode = 'flat' | 'uphill' | 'downhill';
 
 export type CvtProfile = 'stock' | 'light_rollers' | 'heavy_rollers' | 'racing_setup';
 
-export type FlyballConfig = 'light' | 'standard' | 'mixed' | 'heavy';
-
 export interface ProfileConfig {
   rpmGain: number; // Multiplier for RPM increase
   speedDelay: number; // Delay factor for speed response
@@ -34,7 +32,7 @@ export const PROFILE_CONFIGS: Record<CvtProfile, ProfileConfig> = {
     slipFactor: 1.0,
     efficiency: 1.0,
     maxRpm: 8000,
-    description: 'Standard CVT setup'
+    description: 'Standard CVT configuration'
   },
   light_rollers: {
     rpmGain: 1.2,
@@ -62,18 +60,30 @@ export const PROFILE_CONFIGS: Record<CvtProfile, ProfileConfig> = {
   }
 };
 
+export type FlyballConfig = 'preset' | 'custom';
+
 export const TERRAIN_FACTORS: Record<TerrainMode, { acceleration: number; load: number }> = {
   flat: { acceleration: 1.0, load: 1.0 },
   uphill: { acceleration: 0.6, load: 1.5 },
   downhill: { acceleration: 1.4, load: 0.8 }
 };
 
-export const FLYBALL_CONFIGS: Record<FlyballConfig, { rpmModifier: number; description: string }> = {
-  light: { rpmModifier: 1.1, description: '3x 10g flyballs - faster engagement' },
-  standard: { rpmModifier: 1.0, description: '3x 12g flyballs - balanced' },
-  mixed: { rpmModifier: 1.05, description: '3x 12g + 3x 10g flyballs - custom mix' },
-  heavy: { rpmModifier: 0.9, description: '3x 14g flyballs - later engagement' }
+export const PRESET_FLYBALL_CONFIGS = {
+  light: { weights: [10, 10, 10], rpmModifier: 1.1, description: '3x 10g flyballs - faster engagement' },
+  standard: { weights: [12, 12, 12], rpmModifier: 1.0, description: '3x 12g flyballs - balanced' },
+  mixed: { weights: [12, 12, 10], rpmModifier: 1.05, description: '2x 12g + 1x 10g flyballs - custom mix' },
+  heavy: { weights: [14, 14, 14], rpmModifier: 0.9, description: '3x 14g flyballs - later engagement' }
 };
+
+export function calculateFlyballModifier(weights: number[]): number {
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  const avgWeight = totalWeight / weights.length;
+  // Heavier flyballs = lower RPM modifier (later engagement)
+  const baseAvg = 12; // 12g as base
+  return Math.max(0.8, Math.min(1.2, 1.2 - (avgWeight - baseAvg) * 0.02));
+}
+
+
 
 export function calculateMetrics(current: CvtData, previous?: CvtData): CvtMetrics {
   const eli = current.rpm / (current.speed + 1);

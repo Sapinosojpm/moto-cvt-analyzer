@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { CvtData, CvtMetrics, TerrainMode, CvtProfile, FlyballConfig, PROFILE_CONFIGS, TERRAIN_FACTORS, FLYBALL_CONFIGS, calculateMetrics, getRecommendation, getStatusColor } from "@/lib/cvtEngine";
+import { CvtData, CvtMetrics, TerrainMode, CvtProfile, FlyballConfig, PROFILE_CONFIGS, TERRAIN_FACTORS, PRESET_FLYBALL_CONFIGS, calculateFlyballModifier, calculateMetrics, getRecommendation, getStatusColor } from "@/lib/cvtEngine";
 
 interface HistoryPoint {
   rpm: number;
@@ -18,7 +18,8 @@ interface SessionData {
   efficiency: number;
   profile: CvtProfile;
   terrain: TerrainMode;
-  flyball: FlyballConfig;
+  flyballConfig: FlyballConfig;
+  flyballWeights: number[];
   riderWeight: number;
   passengerWeight: number;
 }
@@ -29,7 +30,9 @@ export function useCvtSimulation() {
   const [throttle, setThrottle] = useState<number>(0);
   const [terrain, setTerrain] = useState<TerrainMode>('flat');
   const [profile, setProfile] = useState<CvtProfile>('stock');
-  const [flyball, setFlyball] = useState<FlyballConfig>('standard');
+  const [flyballConfig, setFlyballConfig] = useState<FlyballConfig>('preset');
+  const [flyballPreset, setFlyballPreset] = useState<string>('standard');
+  const [flyballWeights, setFlyballWeights] = useState<number[]>([12, 12, 12, 12, 12, 12]);
   const [riderWeight, setRiderWeight] = useState<number>(60);
   const [passengerWeight, setPassengerWeight] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -79,10 +82,13 @@ export function useCvtSimulation() {
 
     const config = PROFILE_CONFIGS[profile];
     const terrainFactor = TERRAIN_FACTORS[terrain];
-    const flyballConfig = FLYBALL_CONFIGS[flyball];
+
+    // Calculate flyball modifier
+    const currentWeights = flyballConfig === 'custom' ? flyballWeights : PRESET_FLYBALL_CONFIGS[flyballPreset as keyof typeof PRESET_FLYBALL_CONFIGS]?.weights || [12, 12, 12];
+    const rpmModifier = calculateFlyballModifier(currentWeights);
 
     // Physics simulation
-    const adjustedRpmGain = config.rpmGain * flyballConfig.rpmModifier;
+    const adjustedRpmGain = config.rpmGain * rpmModifier;
     const targetRpm = 1000 + throttle * 70 * adjustedRpmGain;
     const rpmResponseTime = config.speedDelay * 0.5; // seconds
     const newRpm = rpm + (targetRpm - rpm) * dt / rpmResponseTime;
@@ -108,7 +114,7 @@ export function useCvtSimulation() {
     const current: CvtData = { rpm: clampedRpm, speed: newSpeed, throttle };
     updateMetrics(current);
     addToHistory(clampedRpm, newSpeed);
-  }, [rpm, speed, throttle, profile, terrain, flyball, riderWeight, passengerWeight, updateMetrics, addToHistory]);
+  }, [rpm, speed, throttle, profile, terrain, flyballConfig, flyballPreset, flyballWeights, riderWeight, passengerWeight, updateMetrics, addToHistory]);
 
   const startSimulation = useCallback(() => {
     setIsRunning(true);
@@ -150,7 +156,8 @@ export function useCvtSimulation() {
         efficiency: Math.round(efficiency * 100) / 100,
         profile,
         terrain,
-        flyball,
+        flyballConfig,
+        flyballWeights,
         riderWeight,
         passengerWeight,
       };
@@ -164,7 +171,7 @@ export function useCvtSimulation() {
       setSessionActive(false);
       sessionStartRef.current = null;
     }
-  }, [sessionActive, metrics.cer, profile, terrain, flyball, riderWeight, passengerWeight]);
+  }, [sessionActive, metrics.cer, profile, terrain, flyballConfig, flyballWeights, riderWeight, passengerWeight]);
 
   // Load sessions from localStorage on mount
   useEffect(() => {
@@ -196,8 +203,12 @@ export function useCvtSimulation() {
     setTerrain,
     profile,
     setProfile,
-    flyball,
-    setFlyball,
+    flyballConfig,
+    setFlyballConfig,
+    flyballPreset,
+    setFlyballPreset,
+    flyballWeights,
+    setFlyballWeights,
     riderWeight,
     setRiderWeight,
     passengerWeight,

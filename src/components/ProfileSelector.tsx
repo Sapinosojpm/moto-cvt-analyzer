@@ -1,12 +1,16 @@
-import { CvtProfile, TerrainMode, FlyballConfig, PROFILE_CONFIGS, FLYBALL_CONFIGS } from "@/lib/cvtEngine";
+import { CvtProfile, TerrainMode, FlyballConfig, PROFILE_CONFIGS, PRESET_FLYBALL_CONFIGS } from "@/lib/cvtEngine";
 
 interface ProfileSelectorProps {
   profile: CvtProfile;
   onProfileChange: (profile: CvtProfile) => void;
   terrain: TerrainMode;
   onTerrainChange: (terrain: TerrainMode) => void;
-  flyball: FlyballConfig;
-  onFlyballChange: (flyball: FlyballConfig) => void;
+  flyballConfig: FlyballConfig;
+  onFlyballConfigChange: (config: FlyballConfig) => void;
+  flyballPreset: string;
+  onFlyballPresetChange: (preset: string) => void;
+  flyballWeights: number[];
+  onFlyballWeightsChange: (weights: number[]) => void;
   riderWeight: number;
   onRiderWeightChange: (weight: number) => void;
   passengerWeight: number;
@@ -18,8 +22,12 @@ export default function ProfileSelector({
   onProfileChange,
   terrain,
   onTerrainChange,
-  flyball,
-  onFlyballChange,
+  flyballConfig,
+  onFlyballConfigChange,
+  flyballPreset,
+  onFlyballPresetChange,
+  flyballWeights,
+  onFlyballWeightsChange,
   riderWeight,
   onRiderWeightChange,
   passengerWeight,
@@ -45,16 +53,47 @@ export default function ProfileSelector({
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">Flyball Configuration</label>
         <select
-          value={flyball}
-          onChange={(e) => onFlyballChange(e.target.value as FlyballConfig)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+          value={flyballConfig}
+          onChange={(e) => onFlyballConfigChange(e.target.value as FlyballConfig)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 mb-2"
         >
-          {Object.entries(FLYBALL_CONFIGS).map(([key, config]) => (
-            <option key={key} value={key}>
-              {key.charAt(0).toUpperCase() + key.slice(1)} - {config.description}
-            </option>
-          ))}
+          <option value="preset">Preset Configurations</option>
+          <option value="custom">Custom (6 Flyballs)</option>
         </select>
+
+        {flyballConfig === 'preset' ? (
+          <select
+            value={flyballPreset}
+            onChange={(e) => onFlyballPresetChange(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+          >
+            {Object.entries(PRESET_FLYBALL_CONFIGS).map(([key, config]) => (
+              <option key={key} value={key}>
+                {key.charAt(0).toUpperCase() + key.slice(1)} - {config.description}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {flyballWeights.map((weight, index) => (
+              <div key={index}>
+                <label className="block text-xs text-gray-400 mb-1">FB {index + 1} (g)</label>
+                <input
+                  type="number"
+                  min="5"
+                  max="20"
+                  value={weight}
+                  onChange={(e) => {
+                    const newWeights = [...flyballWeights];
+                    newWeights[index] = Number(e.target.value);
+                    onFlyballWeightsChange(newWeights);
+                  }}
+                  className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
