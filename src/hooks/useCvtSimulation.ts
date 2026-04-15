@@ -18,6 +18,8 @@ interface SessionData {
   efficiency: number;
   profile: CvtProfile;
   terrain: TerrainMode;
+  riderWeight: number;
+  passengerWeight: number;
 }
 
 export function useCvtSimulation() {
@@ -26,6 +28,8 @@ export function useCvtSimulation() {
   const [throttle, setThrottle] = useState<number>(0);
   const [terrain, setTerrain] = useState<TerrainMode>('flat');
   const [profile, setProfile] = useState<CvtProfile>('stock');
+  const [riderWeight, setRiderWeight] = useState<number>(60);
+  const [passengerWeight, setPassengerWeight] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [sessionActive, setSessionActive] = useState<boolean>(false);
   const [metrics, setMetrics] = useState<CvtMetrics>({
@@ -44,6 +48,7 @@ export function useCvtSimulation() {
   const sessionStartRef = useRef<number | null>(null);
   const sessionMetricsRef = useRef<{ scores: number[]; maxRpm: number }>({ scores: [], maxRpm: 0 });
   const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(performance.now());
 
   const updateMetrics = useCallback((current: CvtData) => {
     const newMetrics = calculateMetrics(current, previousRef.current);
@@ -66,19 +71,29 @@ export function useCvtSimulation() {
     });
   }, []);
 
-  const simulateStep = useCallback(() => {
+  const simulateStep = useCallback((currentTime: number) => {
+    const dt = Math.min((currentTime - lastTimeRef.current) / 1000, 0.1); // cap at 0.1s to prevent large jumps
+    lastTimeRef.current = currentTime;
+
     const config = PROFILE_CONFIGS[profile];
     const terrainFactor = TERRAIN_FACTORS[terrain];
 
     // Physics simulation
     const targetRpm = 1000 + throttle * 70 * config.rpmGain;
     const rpmResponseTime = config.speedDelay * 0.5; // seconds
-    const newRpm = rpm + (targetRpm - rpm) * 0.1 / rpmResponseTime; // dt = 0.1s
+    const newRpm = rpm + (targetRpm - rpm) * dt / rpmResponseTime;
 
     // Speed calculation: simplified physics
-    const cvtRatio = Math.max(0.5, newRpm / (speed + 1)); // Prevent division by zero
-    const acceleration = (newRpm * 0.01 * config.efficiency) / terrainFactor.acceleration;
-    const newSpeed = Math.max(0, speed + acceleration * 0.1);
+    const baseAcceleration = (newRpm * 0.05 * config.efficiency) / terrainFactor.acceleration;
+
+    // Weight factor: heavier load reduces acceleration
+    const bikeWeight = 140; // kg (motorcycle base weight)
+    const totalWeight = bikeWeight + riderWeight + passengerWeight;
+    const baseTotalWeight = bikeWeight + 60; // reference weight (bike + 60kg rider)
+    const weightFactor = totalWeight / baseTotalWeight;
+    const acceleration = baseAcceleration / weightFactor;
+
+    const newSpeed = Math.max(0, speed + acceleration * dt);
 
     // Clamp RPM
     const clampedRpm = Math.min(config.maxRpm, Math.max(800, newRpm));
@@ -89,12 +104,13 @@ export function useCvtSimulation() {
     const current: CvtData = { rpm: clampedRpm, speed: newSpeed, throttle };
     updateMetrics(current);
     addToHistory(clampedRpm, newSpeed);
-  }, [rpm, speed, throttle, profile, terrain, updateMetrics, addToHistory]);
+  }, [rpm, speed, throttle, profile, terrain, riderWeight, passengerWeight, updateMetrics, addToHistory]);
 
   const startSimulation = useCallback(() => {
     setIsRunning(true);
-    const animate = () => {
-      simulateStep();
+    lastTimeRef.current = performance.now();
+    const animate = (currentTime: number) => {
+      simulateStep(currentTime);
       animationRef.current = requestAnimationFrame(animate);
     };
     animationRef.current = requestAnimationFrame(animate);
@@ -130,6 +146,8 @@ export function useCvtSimulation() {
         efficiency: Math.round(efficiency * 100) / 100,
         profile,
         terrain,
+        riderWeight,
+        passengerWeight,
       };
 
       setSessions(prev => {
@@ -141,7 +159,7 @@ export function useCvtSimulation() {
       setSessionActive(false);
       sessionStartRef.current = null;
     }
-  }, [sessionActive, metrics.cer, profile, terrain]);
+  }, [sessionActive, metrics.cer, profile, terrain, riderWeight, passengerWeight]);
 
   // Load sessions from localStorage on mount
   useEffect(() => {
@@ -173,6 +191,10 @@ export function useCvtSimulation() {
     setTerrain,
     profile,
     setProfile,
+    riderWeight,
+    setRiderWeight,
+    passengerWeight,
+    setPassengerWeight,
     isRunning,
     startSimulation,
     stopSimulation,
