@@ -21,6 +21,8 @@ export default function Dashboard() {
     setTerrain,
     profile,
     setProfile,
+    flyball,
+    setFlyball,
     riderWeight,
     setRiderWeight,
     passengerWeight,
@@ -52,6 +54,8 @@ export default function Dashboard() {
             onProfileChange={setProfile}
             terrain={terrain}
             onTerrainChange={setTerrain}
+            flyball={flyball}
+            onFlyballChange={setFlyball}
             riderWeight={riderWeight}
             onRiderWeightChange={setRiderWeight}
             passengerWeight={passengerWeight}
@@ -95,6 +99,7 @@ export default function Dashboard() {
                     <tr className="border-b border-gray-700">
                       <th className="text-left py-2">Profile</th>
                       <th className="text-left py-2">Terrain</th>
+                      <th className="text-left py-2">Flyballs</th>
                       <th className="text-left py-2">Rider (kg)</th>
                       <th className="text-left py-2">Passenger (kg)</th>
                       <th className="text-left py-2">Avg CVT Score</th>
@@ -108,6 +113,7 @@ export default function Dashboard() {
                       <tr key={session.id} className="border-b border-gray-700">
                         <td className="py-2">{session.profile.replace('_', ' ').toUpperCase()}</td>
                         <td className="py-2">{session.terrain}</td>
+                        <td className="py-2">{session.flyball}</td>
                         <td className="py-2">{session.riderWeight}</td>
                         <td className="py-2">{session.passengerWeight}</td>
                         <td className="py-2">{session.avgCvtScore}</td>

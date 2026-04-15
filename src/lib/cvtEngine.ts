@@ -16,6 +16,8 @@ export type TerrainMode = 'flat' | 'uphill' | 'downhill';
 
 export type CvtProfile = 'stock' | 'light_rollers' | 'heavy_rollers' | 'racing_setup';
 
+export type FlyballConfig = 'light' | 'standard' | 'mixed' | 'heavy';
+
 export interface ProfileConfig {
   rpmGain: number; // Multiplier for RPM increase
   speedDelay: number; // Delay factor for speed response
@@ -64,6 +66,13 @@ export const TERRAIN_FACTORS: Record<TerrainMode, { acceleration: number; load: 
   flat: { acceleration: 1.0, load: 1.0 },
   uphill: { acceleration: 0.6, load: 1.5 },
   downhill: { acceleration: 1.4, load: 0.8 }
+};
+
+export const FLYBALL_CONFIGS: Record<FlyballConfig, { rpmModifier: number; description: string }> = {
+  light: { rpmModifier: 1.1, description: '3x 10g flyballs - faster engagement' },
+  standard: { rpmModifier: 1.0, description: '3x 12g flyballs - balanced' },
+  mixed: { rpmModifier: 1.05, description: '3x 12g + 3x 10g flyballs - custom mix' },
+  heavy: { rpmModifier: 0.9, description: '3x 14g flyballs - later engagement' }
 };
 
 export function calculateMetrics(current: CvtData, previous?: CvtData): CvtMetrics {

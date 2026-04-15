@@ -1,10 +1,12 @@
-import { CvtProfile, TerrainMode, PROFILE_CONFIGS } from "@/lib/cvtEngine";
+import { CvtProfile, TerrainMode, FlyballConfig, PROFILE_CONFIGS, FLYBALL_CONFIGS } from "@/lib/cvtEngine";
 
 interface ProfileSelectorProps {
   profile: CvtProfile;
   onProfileChange: (profile: CvtProfile) => void;
   terrain: TerrainMode;
   onTerrainChange: (terrain: TerrainMode) => void;
+  flyball: FlyballConfig;
+  onFlyballChange: (flyball: FlyballConfig) => void;
   riderWeight: number;
   onRiderWeightChange: (weight: number) => void;
   passengerWeight: number;
@@ -16,6 +18,8 @@ export default function ProfileSelector({
   onProfileChange,
   terrain,
   onTerrainChange,
+  flyball,
+  onFlyballChange,
   riderWeight,
   onRiderWeightChange,
   passengerWeight,
@@ -33,6 +37,21 @@ export default function ProfileSelector({
           {Object.entries(PROFILE_CONFIGS).map(([key, config]) => (
             <option key={key} value={key}>
               {key.replace('_', ' ').toUpperCase()} - {config.description}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-2">Flyball Configuration</label>
+        <select
+          value={flyball}
+          onChange={(e) => onFlyballChange(e.target.value as FlyballConfig)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+        >
+          {Object.entries(FLYBALL_CONFIGS).map(([key, config]) => (
+            <option key={key} value={key}>
+              {key.charAt(0).toUpperCase() + key.slice(1)} - {config.description}
             </option>
           ))}
         </select>
