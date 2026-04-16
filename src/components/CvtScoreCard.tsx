@@ -1,66 +1,94 @@
+"use client";
+
+import React from 'react';
+import { motion } from 'framer-motion';
+
 interface CvtScoreCardProps {
   score: number;
   statusColor: string;
 }
 
 export default function CvtScoreCard({ score, statusColor }: CvtScoreCardProps) {
-  const percentage = score;
-  const angle = 180 + (percentage / 100) * 180;
-
-  const getColor = (color: string) => {
-    switch (color) {
-      case "green": return "#10B981";
-      case "yellow": return "#F59E0B";
-      case "red": return "#EF4444";
-      default: return "#6B7280";
-    }
-  };
+  const percentage = Math.min(100, score);
+  
+  // Determine status text based on color
+  const statusText = statusColor === 'text-green-500' ? 'GREEN' : 
+                     statusColor === 'text-yellow-500' ? 'STABLE' : 'CRITICAL';
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-      <h3 className="text-lg font-semibold text-white mb-4 text-center">CVT Score</h3>
-      <div className="relative w-48 h-24 mx-auto">
-        <svg viewBox="0 0 200 100" className="w-full h-full">
-          {/* Background arc */}
+    <div className="flex flex-col items-center">
+      <div className="relative w-full h-[140px] flex items-center justify-center overflow-hidden">
+        <svg viewBox="0 0 200 120" className="w-full h-full">
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#ef4444" />
+              <stop offset="50%" stopColor="#eab308" />
+              <stop offset="100%" stopColor="#22c55e" />
+            </linearGradient>
+            <filter id="scoreGlow">
+              <feGaussianBlur stdDeviation="3" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Background Track */}
           <path
-            d="M 20 80 A 60 60 0 0 1 180 80"
+            d="M 40 100 A 60 60 0 0 1 160 100"
             fill="none"
-            stroke="#374151"
-            strokeWidth="8"
-            className="transition-all duration-300 ease-out"
-          />
-          {/* Value arc */}
-          <path
-            d="M 20 80 A 60 60 0 0 1 180 80"
-            fill="none"
-            stroke={getColor(statusColor)}
-            strokeWidth="8"
-            strokeDasharray={`${(percentage / 100) * 188.4} 188.4`}
-            className="transition-all duration-300 ease-out"
-          />
-          {/* Needle */}
-          <line
-            x1="100"
-            y1="80"
-            x2={100 + 50 * Math.cos((angle * Math.PI) / 180)}
-            y2={80 + 50 * Math.sin((angle * Math.PI) / 180)}
-            stroke="#EF4444"
-            strokeWidth="3"
+            stroke="#1e293b"
+            strokeWidth="15"
             strokeLinecap="round"
-            className="transition-all duration-300 ease-out"
           />
-          {/* Center dot */}
-          <circle cx="100" cy="80" r="5" fill="#EF4444" />
+
+          {/* Progress Path (Base Gradient) */}
+          <motion.path
+            d="M 40 100 A 60 60 0 0 1 160 100"
+            fill="none"
+            stroke="url(#scoreGradient)"
+            strokeWidth="15"
+            strokeLinecap="round"
+            initial={{ strokeDasharray: "0 188.4" }}
+            animate={{ strokeDasharray: `${(percentage / 100) * 188.4} 188.4` }}
+            transition={{ type: "spring", stiffness: 45, damping: 15 }}
+            opacity="0.2"
+          />
+
+          {/* Value Path (Solid with Status Color) */}
+          <motion.path
+            d="M 40 100 A 60 60 0 0 1 160 100"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="15"
+            strokeLinecap="round"
+            initial={{ strokeDasharray: "0 188.4" }}
+            animate={{ strokeDasharray: `${(percentage / 100) * 188.4} 188.4` }}
+            transition={{ type: "spring", stiffness: 50, damping: 12 }}
+            className={`transition-colors duration-500 ${statusColor}`}
+            filter="url(#scoreGlow)"
+          />
         </svg>
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-white text-xl font-bold">
-          {score.toFixed(1)}
+
+        {/* Value Display */}
+        <div className="absolute inset-x-0 bottom-4 flex flex-col items-center justify-center">
+          <motion.span 
+            key={score}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-4xl font-black text-white tabular-nums drop-shadow-md"
+          >
+            {Math.round(score)}
+          </motion.span>
+          <motion.span 
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            className={`text-[10px] font-black uppercase tracking-[0.2em] ${statusColor}`}
+          >
+            {statusText}
+          </motion.span>
         </div>
-      </div>
-      <div className={`mt-2 text-center text-sm font-medium ${
-        statusColor === "green" ? "text-green-400" :
-        statusColor === "yellow" ? "text-yellow-400" : "text-red-400"
-      }`}>
-        {statusColor.toUpperCase()}
       </div>
     </div>
   );

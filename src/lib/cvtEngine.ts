@@ -128,7 +128,34 @@ export function calculateFlyballModifier(weights: number[]): number {
 
 
 
-export function calculateMetrics(current: CvtData, previous?: CvtData): CvtMetrics {
+export function calculateTransmissionRatio(rpm: number, speed: number, tireSize: TireSize): number {
+  if (speed <= 0) return 3.2; // Typical "Low" CVT ratio (short gearing)
+  
+  // Speed is in KM/H. Convert to rotation speed.
+  // Wheel RPM = Speed (KM/H) / (Wheel Circumference (m) * 60)
+  // Standard tire circumference is ~1.4 meters for a typical scooter
+  const circ = tireSize === 'standard' ? 1.4 : tireSize === 'low_profile' ? 1.25 : 1.6;
+  const wheelRpm = (speed * 1000 / 60) / circ;
+  
+  // Final Drive Ratio is roughly 10:1 for Click/NMAX
+  const finalDriveRatio = 10.2;
+  const clutchShaftRpm = wheelRpm * finalDriveRatio;
+  
+  // CVT Ratio = Pulley Input RPM / Pulley Output RPM (Clutch Shaft)
+  const ratio = rpm / clutchShaftRpm;
+  
+  // CVT ratios typically range from 2.8 (low) to 0.8 (high/overdrive)
+  return Math.round(Math.max(0.7, Math.min(3.2, ratio)) * 100) / 100;
+}
+
+export function calculateFuelConsumption(rpm: number, throttle: number, speed: number): number {
+  if (speed < 1) return 0;
+  // Basic model: Fuel (L/100km) = (RPM * Throttle * factor) / Speed
+  const baseConsumption = (rpm * (0.2 + throttle / 100) * 0.000015) / (speed / 100);
+  return Math.round(Math.max(1.5, Math.min(15.0, baseConsumption)) * 10) / 10;
+}
+
+export function calculateMetrics(current: CvtData, previous?: CvtData, tireSize: TireSize = 'standard'): CvtMetrics {
   const eli = current.rpm / (current.speed + 1);
   const cer = (current.speed / current.rpm) * 1000;
   const ar = previous ? (current.speed - previous.speed) / (current.rpm - previous.rpm || 1) : 0;

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { CvtData, CvtMetrics, TerrainMode, WindMode, TireSize, CvtProfile, FlyballConfig, CenterSpring, ClutchSpring, EngineCC, PROFILE_CONFIGS, TERRAIN_FACTORS, WIND_FACTORS, TIRE_CONFIGS, PRESET_FLYBALL_CONFIGS, CENTER_SPRING_CONFIGS, CLUTCH_SPRING_CONFIGS, ENGINE_CC_CONFIGS, calculateFlyballModifier, calculateMetrics, getRecommendation, getStatusColor } from "@/lib/cvtEngine";
+import { CvtData, CvtMetrics, TerrainMode, WindMode, TireSize, CvtProfile, FlyballConfig, CenterSpring, ClutchSpring, EngineCC, PROFILE_CONFIGS, TERRAIN_FACTORS, WIND_FACTORS, TIRE_CONFIGS, PRESET_FLYBALL_CONFIGS, CENTER_SPRING_CONFIGS, CLUTCH_SPRING_CONFIGS, ENGINE_CC_CONFIGS, calculateFlyballModifier, calculateMetrics, getRecommendation, getStatusColor, calculateTransmissionRatio, calculateFuelConsumption } from "@/lib/cvtEngine";
 
 interface HistoryPoint {
   rpm: number;
   speed: number;
+  ratio: number;
+  fuel: number;
   timestamp: number;
 }
 
@@ -54,6 +56,9 @@ export function useCvtSimulation() {
   const [recommendation, setRecommendation] = useState<string>("OPTIMAL CVT SETUP");
   const [statusColor, setStatusColor] = useState<string>("green");
   const [history, setHistory] = useState<HistoryPoint[]>([]);
+  const [electricalLoad, setElectricalLoad] = useState<number>(0); // 0-300 Watts
+  const [beltLife, setBeltLife] = useState<number>(100);
+  const [rollerLife, setRollerLife] = useState<number>(100);
   const [sessions, setSessions] = useState<SessionData[]>([]);
 
   const previousRef = useRef<CvtData>({ rpm: 1000, speed: 0, throttle: 0 });
@@ -74,7 +79,8 @@ export function useCvtSimulation() {
     isShuttingDown,
     windMode,
     tirePsi,
-    tireSize
+    tireSize,
+    electricalLoad
   });
   const sessionStartRef = useRef<number | null>(null);
   const sessionMetricsRef = useRef<{ scores: number[]; maxRpm: number }>({ scores: [], maxRpm: 0 });
@@ -99,9 +105,10 @@ export function useCvtSimulation() {
       isShuttingDown,
       windMode,
       tirePsi,
-      tireSize
+      tireSize,
+      electricalLoad
     };
-  }, [throttle, profile, terrain, flyballConfig, flyballPreset, flyballWeights, centerSpring, clutchSpring, engineCC, riderWeight, passengerWeight, isShuttingDown, windMode, tirePsi, tireSize]);
+  }, [throttle, profile, terrain, flyballConfig, flyballPreset, flyballWeights, centerSpring, clutchSpring, engineCC, riderWeight, passengerWeight, isShuttingDown, windMode, tirePsi, tireSize, electricalLoad]);
 
   const updateMetrics = useCallback((current: CvtData) => {
     const newMetrics = calculateMetrics(current, previousRef.current);
@@ -117,11 +124,26 @@ export function useCvtSimulation() {
     previousRef.current = current;
   }, [profile, sessionActive]);
 
-  const addToHistory = useCallback((rpm: number, speed: number) => {
+  const addToHistory = useCallback((rpm: number, speed: number, ratio: number, fuel: number) => {
     setHistory(prev => {
-      const newHistory = [...prev, { rpm, speed, timestamp: Date.now() }];
+      const newHistory = [...prev, { rpm, speed, ratio, fuel, timestamp: Date.now() }];
       return newHistory.slice(-50); // Keep last 50 points
     });
+  }, []);
+
+  const stopSimulationInternal = useCallback(() => {
+    setIsRunning(false);
+    setIsShuttingDown(false);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    // Final reset to exact idle values
+    setRpm(1000);
+    setSpeed(0);
+    setThrottle(0);
+    rpmRef.current = 1000;
+    speedRef.current = 0;
   }, []);
 
   const simulateStep = useCallback((currentTime: number) => {
@@ -191,6 +213,9 @@ export function useCvtSimulation() {
       
       // Tire size speed factor affects the final velocity output per rotation
       acceleration = (netForce / weightFactor) * tireConfig.speedFactor;
+
+      // ELECTRICAL LOAD DRAG: Add parasitic loss (0.02 * watts)
+      acceleration -= (params.electricalLoad * 0.01) / weightFactor;
     } else {
       // Natural deceleration if below engagement and moving
       acceleration = speedRef.current > 0 ? -10.0 : 0;
@@ -204,6 +229,16 @@ export function useCvtSimulation() {
     const newSpeed = Math.max(0, speedRef.current + (acceleration * 0.1) * dt); // 0.1 scale to keep units manageable
     speedRef.current = newSpeed;
 
+    // Calculate New Advanced Metrics
+    const currentRatio = calculateTransmissionRatio(clampedRpm, newSpeed, params.tireSize);
+    const currentFuel = calculateFuelConsumption(clampedRpm, effectiveThrottle, newSpeed);
+
+    // Maintenance Wear Simulator
+    if (isRunning && !params.isShuttingDown) {
+      setBeltLife(prev => Math.max(0, prev - (metrics.slip * 0.01 + clampedRpm * 0.00001) * dt));
+      setRollerLife(prev => Math.max(0, prev - (clampedRpm * 0.000005) * dt));
+    }
+
     // Update UI states
     setRpm(Math.round(clampedRpm));
     setSpeed(Math.round(newSpeed * 10) / 10);
@@ -214,7 +249,7 @@ export function useCvtSimulation() {
     // Sample history every 5 frames to avoid performance issues
     frameCounterRef.current++;
     if (frameCounterRef.current >= 5) {
-      addToHistory(clampedRpm, newSpeed);
+      addToHistory(clampedRpm, newSpeed, currentRatio, currentFuel);
       frameCounterRef.current = 0;
     }
 
@@ -222,7 +257,7 @@ export function useCvtSimulation() {
     if (params.isShuttingDown && clampedRpm < 1050 && newSpeed < 0.2) {
       stopSimulationInternal();
     }
-  }, [profile, updateMetrics, addToHistory]);
+  }, [profile, isRunning, metrics.slip, updateMetrics, addToHistory, stopSimulationInternal]);
 
   const startSimulation = useCallback(() => {
     setIsRunning(true);
@@ -242,20 +277,6 @@ export function useCvtSimulation() {
     animationRef.current = requestAnimationFrame(animate);
   }, [simulateStep]);
 
-  const stopSimulationInternal = useCallback(() => {
-    setIsRunning(false);
-    setIsShuttingDown(false);
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    // Final reset to exact idle values
-    setRpm(1000);
-    setSpeed(0);
-    setThrottle(0);
-    rpmRef.current = 1000;
-    speedRef.current = 0;
-  }, []);
 
   const stopSimulation = useCallback(() => {
     // If already shutting down, force instant stop (Emergency Stop)
@@ -370,5 +391,9 @@ export function useCvtSimulation() {
     statusColor,
     history,
     sessions,
+    electricalLoad,
+    setElectricalLoad,
+    beltLife,
+    rollerLife,
   };
 }
