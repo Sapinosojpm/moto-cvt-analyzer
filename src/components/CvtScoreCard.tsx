@@ -5,7 +5,7 @@ interface CvtScoreCardProps {
 
 export default function CvtScoreCard({ score, statusColor }: CvtScoreCardProps) {
   const percentage = score;
-  const angle = (percentage / 100) * 180 - 90;
+  const angle = 180 + (percentage / 100) * 180;
 
   const getColor = (color: string) => {
     switch (color) {
@@ -27,6 +27,7 @@ export default function CvtScoreCard({ score, statusColor }: CvtScoreCardProps) 
             fill="none"
             stroke="#374151"
             strokeWidth="8"
+            className="transition-all duration-300 ease-out"
           />
           {/* Value arc */}
           <path
@@ -35,6 +36,7 @@ export default function CvtScoreCard({ score, statusColor }: CvtScoreCardProps) 
             stroke={getColor(statusColor)}
             strokeWidth="8"
             strokeDasharray={`${(percentage / 100) * 188.4} 188.4`}
+            className="transition-all duration-300 ease-out"
           />
           {/* Needle */}
           <line
@@ -45,6 +47,7 @@ export default function CvtScoreCard({ score, statusColor }: CvtScoreCardProps) 
             stroke="#EF4444"
             strokeWidth="3"
             strokeLinecap="round"
+            className="transition-all duration-300 ease-out"
           />
           {/* Center dot */}
           <circle cx="100" cy="80" r="5" fill="#EF4444" />

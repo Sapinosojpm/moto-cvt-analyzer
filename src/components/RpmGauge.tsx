@@ -5,7 +5,7 @@ interface RpmGaugeProps {
 
 export default function RpmGauge({ rpm, maxRpm }: RpmGaugeProps) {
   const percentage = (rpm / maxRpm) * 100;
-  const angle = (percentage / 100) * 180 - 90; // -90 to 90 degrees
+  const angle = 180 + (percentage / 100) * 180; // 180 (left) to 360 (right)
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
@@ -18,6 +18,7 @@ export default function RpmGauge({ rpm, maxRpm }: RpmGaugeProps) {
             fill="none"
             stroke="#374151"
             strokeWidth="8"
+            className="transition-all duration-300 ease-out"
           />
           {/* Value arc */}
           <path
@@ -26,6 +27,7 @@ export default function RpmGauge({ rpm, maxRpm }: RpmGaugeProps) {
             stroke="#3B82F6"
             strokeWidth="8"
             strokeDasharray={`${(percentage / 100) * 188.4} 188.4`}
+            className="transition-all duration-300 ease-out"
           />
           {/* Needle */}
           <line
@@ -36,6 +38,7 @@ export default function RpmGauge({ rpm, maxRpm }: RpmGaugeProps) {
             stroke="#EF4444"
             strokeWidth="3"
             strokeLinecap="round"
+            className="transition-all duration-300 ease-out"
           />
           {/* Center dot */}
           <circle cx="100" cy="80" r="5" fill="#EF4444" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { CvtData, CvtMetrics, TerrainMode, CvtProfile, FlyballConfig, PROFILE_CONFIGS, TERRAIN_FACTORS, PRESET_FLYBALL_CONFIGS, calculateFlyballModifier, calculateMetrics, getRecommendation, getStatusColor } from "@/lib/cvtEngine";
+import { CvtData, CvtMetrics, TerrainMode, WindMode, TireSize, CvtProfile, FlyballConfig, CenterSpring, ClutchSpring, EngineCC, PROFILE_CONFIGS, TERRAIN_FACTORS, WIND_FACTORS, TIRE_CONFIGS, PRESET_FLYBALL_CONFIGS, CENTER_SPRING_CONFIGS, CLUTCH_SPRING_CONFIGS, ENGINE_CC_CONFIGS, calculateFlyballModifier, calculateMetrics, getRecommendation, getStatusColor } from "@/lib/cvtEngine";
 
 interface HistoryPoint {
   rpm: number;
@@ -29,13 +29,20 @@ export function useCvtSimulation() {
   const [speed, setSpeed] = useState<number>(0);
   const [throttle, setThrottle] = useState<number>(0);
   const [terrain, setTerrain] = useState<TerrainMode>('flat');
+  const [windMode, setWindMode] = useState<WindMode>('none');
+  const [tirePsi, setTirePsi] = useState<number>(30);
+  const [tireSize, setTireSize] = useState<TireSize>('standard');
   const [profile, setProfile] = useState<CvtProfile>('stock');
   const [flyballConfig, setFlyballConfig] = useState<FlyballConfig>('preset');
   const [flyballPreset, setFlyballPreset] = useState<string>('standard');
-  const [flyballWeights, setFlyballWeights] = useState<number[]>([12, 12, 12, 12, 12, 12]);
+  const [flyballWeights, setFlyballWeights] = useState<number[]>([9, 9, 9, 9, 9, 9]);
+  const [centerSpring, setCenterSpring] = useState<CenterSpring>('standard');
+  const [clutchSpring, setClutchSpring] = useState<ClutchSpring>('standard');
+  const [engineCC, setEngineCC] = useState<EngineCC>('125cc');
   const [riderWeight, setRiderWeight] = useState<number>(60);
   const [passengerWeight, setPassengerWeight] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isShuttingDown, setIsShuttingDown] = useState<boolean>(false);
   const [sessionActive, setSessionActive] = useState<boolean>(false);
   const [metrics, setMetrics] = useState<CvtMetrics>({
     eli: 0,
@@ -50,15 +57,56 @@ export function useCvtSimulation() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
 
   const previousRef = useRef<CvtData>({ rpm: 1000, speed: 0, throttle: 0 });
+  const rpmRef = useRef<number>(1000);
+  const speedRef = useRef<number>(0);
+  const paramsRef = useRef({
+    throttle,
+    profile,
+    terrain,
+    flyballConfig,
+    flyballPreset,
+    flyballWeights,
+    centerSpring,
+    clutchSpring,
+    engineCC,
+    riderWeight,
+    passengerWeight,
+    isShuttingDown,
+    windMode,
+    tirePsi,
+    tireSize
+  });
   const sessionStartRef = useRef<number | null>(null);
   const sessionMetricsRef = useRef<{ scores: number[]; maxRpm: number }>({ scores: [], maxRpm: 0 });
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(performance.now());
+  const frameCounterRef = useRef<number>(0);
+
+  // Keep paramsRef in sync with latest state
+  useEffect(() => {
+    paramsRef.current = {
+      throttle,
+      profile,
+      terrain,
+      flyballConfig,
+      flyballPreset,
+      flyballWeights,
+      centerSpring,
+      clutchSpring,
+      engineCC,
+      riderWeight,
+      passengerWeight,
+      isShuttingDown,
+      windMode,
+      tirePsi,
+      tireSize
+    };
+  }, [throttle, profile, terrain, flyballConfig, flyballPreset, flyballWeights, centerSpring, clutchSpring, engineCC, riderWeight, passengerWeight, isShuttingDown, windMode, tirePsi, tireSize]);
 
   const updateMetrics = useCallback((current: CvtData) => {
     const newMetrics = calculateMetrics(current, previousRef.current);
     setMetrics(newMetrics);
-    setRecommendation(getRecommendation(newMetrics, profile));
+    setRecommendation(getRecommendation(newMetrics, profile, current.rpm));
     setStatusColor(getStatusColor(newMetrics.cvtScore));
 
     if (sessionActive) {
@@ -80,59 +128,144 @@ export function useCvtSimulation() {
     const dt = Math.min((currentTime - lastTimeRef.current) / 1000, 0.1); // cap at 0.1s to prevent large jumps
     lastTimeRef.current = currentTime;
 
-    const config = PROFILE_CONFIGS[profile];
-    const terrainFactor = TERRAIN_FACTORS[terrain];
+    if (dt <= 0) return;
+
+    const params = paramsRef.current;
+    
+    const config = PROFILE_CONFIGS[params.profile];
+    const terrainFactor = TERRAIN_FACTORS[params.terrain];
+    const centerSpringConfig = CENTER_SPRING_CONFIGS[params.centerSpring];
+    const clutchSpringConfig = CLUTCH_SPRING_CONFIGS[params.clutchSpring];
+    const engineConfig = ENGINE_CC_CONFIGS[params.engineCC];
+    const windConfig = WIND_FACTORS[params.windMode];
+    const tireConfig = TIRE_CONFIGS[params.tireSize];
+
+    // Forced zero throttle if shutting down
+    const effectiveThrottle = params.isShuttingDown ? 0 : params.throttle;
 
     // Calculate flyball modifier
-    const currentWeights = flyballConfig === 'custom' ? flyballWeights : PRESET_FLYBALL_CONFIGS[flyballPreset as keyof typeof PRESET_FLYBALL_CONFIGS]?.weights || [12, 12, 12];
+    const currentWeights = params.flyballConfig === 'custom' ? params.flyballWeights : PRESET_FLYBALL_CONFIGS[params.flyballPreset as keyof typeof PRESET_FLYBALL_CONFIGS]?.weights || [12, 12, 12];
     const rpmModifier = calculateFlyballModifier(currentWeights);
 
     // Physics simulation
     const adjustedRpmGain = config.rpmGain * rpmModifier;
-    const targetRpm = 1000 + throttle * 70 * adjustedRpmGain;
+    const targetRpm = 1000 + effectiveThrottle * 70 * adjustedRpmGain;
     const rpmResponseTime = config.speedDelay * 0.5; // seconds
-    const newRpm = rpm + (targetRpm - rpm) * dt / rpmResponseTime;
-
-    // Speed calculation: simplified physics
-    const baseAcceleration = (newRpm * 0.05 * config.efficiency) / terrainFactor.acceleration;
-
-    // Weight factor: heavier load reduces acceleration
-    const bikeWeight = 140; // kg (motorcycle base weight)
-    const totalWeight = bikeWeight + riderWeight + passengerWeight;
-    const baseTotalWeight = bikeWeight + 60; // reference weight (bike + 60kg rider)
-    const weightFactor = totalWeight / baseTotalWeight;
-    const acceleration = baseAcceleration / weightFactor;
-
-    const newSpeed = Math.max(0, speed + acceleration * dt);
-
-    // Clamp RPM
+    
+    // Smooth RPM transition
+    const oldRpm = rpmRef.current;
+    const newRpm = oldRpm + (targetRpm - oldRpm) * dt / rpmResponseTime;
     const clampedRpm = Math.min(config.maxRpm, Math.max(800, newRpm));
+    rpmRef.current = clampedRpm;
 
+    // Clutch engagement logic: standard CVT engagement around 2200 RPM + offset from springs
+    const engagementRpm = 2200 + clutchSpringConfig.engagementOffset;
+    let acceleration = 0;
+    
+    if (clampedRpm > engagementRpm) {
+      // Speed calculation: more realistic acceleration
+      // Power is roughly proportional to RPM * efficiency * Engine CC
+      const powerFactor = (clampedRpm - engagementRpm) / (config.maxRpm - engagementRpm);
+      
+      // Center spring resistance: harder to move the belt
+      // BUFFED: Increased base force from 500 to 650 for realistic 125cc top speeds
+      const baseForce = powerFactor * 650 * config.efficiency * engineConfig.powerFactor * (1 / centerSpringConfig.stiffness); 
+      
+      // Weight factor
+      const bikeWeight = 140;
+      const totalWeight = bikeWeight + riderWeight + passengerWeight;
+      const weightFactor = totalWeight / 200; // normalized to 200kg
+      
+      // Drag calculation (to limit top speed)
+      const currentSpeed = speedRef.current;
+      // WIND-ADJUSTED DRAG: multiplied by windConfig.dragMultiplier
+      // CALIBRATED: Increased base drag from 0.04 to 0.055 and factored in engine topSpeedFactor
+      const airDrag = (0.055 / Math.sqrt(engineConfig.topSpeedFactor)) * currentSpeed * currentSpeed * windConfig.dragMultiplier; 
+      // TIRE PSI IMPACT: lower PSI = higher rolling resistance
+      const rollingResistance = 5.0 * (30 / params.tirePsi); 
+      // Increased gravity impact for realism
+      const gravityForce = (params.terrain === 'uphill' ? 120 : params.terrain === 'downhill' ? -120 : 0) * weightFactor;
+
+      // Tire load factor affects acceleration torque requirement
+      const netForce = (baseForce * terrainFactor.acceleration / tireConfig.loadFactor) - airDrag - rollingResistance - gravityForce;
+      
+      // Tire size speed factor affects the final velocity output per rotation
+      acceleration = (netForce / weightFactor) * tireConfig.speedFactor;
+    } else {
+      // Natural deceleration if below engagement and moving
+      acceleration = speedRef.current > 0 ? -10.0 : 0;
+    }
+
+    // Extra braking force during shutdown to ensure it stops eventually
+    if (params.isShuttingDown) {
+      acceleration -= 20.0;
+    }
+
+    const newSpeed = Math.max(0, speedRef.current + (acceleration * 0.1) * dt); // 0.1 scale to keep units manageable
+    speedRef.current = newSpeed;
+
+    // Update UI states
     setRpm(Math.round(clampedRpm));
     setSpeed(Math.round(newSpeed * 10) / 10);
 
-    const current: CvtData = { rpm: clampedRpm, speed: newSpeed, throttle };
+    const current: CvtData = { rpm: clampedRpm, speed: newSpeed, throttle: effectiveThrottle };
     updateMetrics(current);
-    addToHistory(clampedRpm, newSpeed);
-  }, [rpm, speed, throttle, profile, terrain, flyballConfig, flyballPreset, flyballWeights, riderWeight, passengerWeight, updateMetrics, addToHistory]);
+    
+    // Sample history every 5 frames to avoid performance issues
+    frameCounterRef.current++;
+    if (frameCounterRef.current >= 5) {
+      addToHistory(clampedRpm, newSpeed);
+      frameCounterRef.current = 0;
+    }
+
+    // Auto-stop simulation when spin-down is complete
+    if (params.isShuttingDown && clampedRpm < 1050 && newSpeed < 0.2) {
+      stopSimulationInternal();
+    }
+  }, [profile, updateMetrics, addToHistory]);
 
   const startSimulation = useCallback(() => {
     setIsRunning(true);
+    setIsShuttingDown(false);
     lastTimeRef.current = performance.now();
+    
     const animate = (currentTime: number) => {
+      // Use a ref-based check for isRunning equivalent to avoid stale closures
+      // or check the current status of shutting down
       simulateStep(currentTime);
-      animationRef.current = requestAnimationFrame(animate);
+      
+      // Only schedule next frame if we are still running
+      if (animationRef.current !== null) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
     };
     animationRef.current = requestAnimationFrame(animate);
   }, [simulateStep]);
 
-  const stopSimulation = useCallback(() => {
+  const stopSimulationInternal = useCallback(() => {
     setIsRunning(false);
+    setIsShuttingDown(false);
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
+    // Final reset to exact idle values
+    setRpm(1000);
+    setSpeed(0);
+    setThrottle(0);
+    rpmRef.current = 1000;
+    speedRef.current = 0;
   }, []);
+
+  const stopSimulation = useCallback(() => {
+    // If already shutting down, force instant stop (Emergency Stop)
+    if (paramsRef.current.isShuttingDown) {
+      stopSimulationInternal();
+      return;
+    }
+    // Start spin-down instead of instant kill
+    setIsShuttingDown(true);
+  }, [stopSimulationInternal]);
 
   const startSession = useCallback(() => {
     setSessionActive(true);
@@ -201,6 +334,12 @@ export function useCvtSimulation() {
     setThrottle,
     terrain,
     setTerrain,
+    windMode,
+    setWindMode,
+    tirePsi,
+    setTirePsi,
+    tireSize,
+    setTireSize,
     profile,
     setProfile,
     flyballConfig,
@@ -209,11 +348,18 @@ export function useCvtSimulation() {
     setFlyballPreset,
     flyballWeights,
     setFlyballWeights,
+    centerSpring,
+    setCenterSpring,
+    clutchSpring,
+    setClutchSpring,
+    engineCC,
+    setEngineCC,
     riderWeight,
     setRiderWeight,
     passengerWeight,
     setPassengerWeight,
     isRunning,
+    isShuttingDown,
     startSimulation,
     stopSimulation,
     sessionActive,

@@ -2,6 +2,7 @@ interface SimulationControlsProps {
   throttle: number;
   onThrottleChange: (throttle: number) => void;
   isRunning: boolean;
+  isShuttingDown?: boolean;
   onStartSimulation: () => void;
   onStopSimulation: () => void;
   sessionActive: boolean;
@@ -13,6 +14,7 @@ export default function SimulationControls({
   throttle,
   onThrottleChange,
   isRunning,
+  isShuttingDown,
   onStartSimulation,
   onStopSimulation,
   sessionActive,
@@ -40,11 +42,15 @@ export default function SimulationControls({
           onClick={isRunning ? onStopSimulation : onStartSimulation}
           className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
             isRunning
-              ? "bg-red-600 hover:bg-red-700 text-white"
+              ? isShuttingDown 
+                ? "bg-orange-600 hover:bg-red-700 text-white" 
+                : "bg-red-600 hover:bg-red-700 text-white"
               : "bg-green-600 hover:bg-green-700 text-white"
           }`}
         >
-          {isRunning ? "Stop Simulation" : "Start Simulation"}
+          {isRunning 
+            ? isShuttingDown ? "Stopping..." : "Stop Simulation" 
+            : "Start Simulation"}
         </button>
       </div>
 

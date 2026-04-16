@@ -1,20 +1,32 @@
-import { CvtProfile, TerrainMode, FlyballConfig, PROFILE_CONFIGS, PRESET_FLYBALL_CONFIGS } from "@/lib/cvtEngine";
+import { CvtProfile, TerrainMode, WindMode, TireSize, FlyballConfig, CenterSpring, ClutchSpring, EngineCC, PROFILE_CONFIGS, PRESET_FLYBALL_CONFIGS, CENTER_SPRING_CONFIGS, CLUTCH_SPRING_CONFIGS, ENGINE_CC_CONFIGS, WIND_FACTORS, TIRE_CONFIGS } from "@/lib/cvtEngine";
 
 interface ProfileSelectorProps {
   profile: CvtProfile;
   onProfileChange: (profile: CvtProfile) => void;
   terrain: TerrainMode;
   onTerrainChange: (terrain: TerrainMode) => void;
+  windMode: WindMode;
+  onWindModeChange: (windMode: WindMode) => void;
   flyballConfig: FlyballConfig;
   onFlyballConfigChange: (config: FlyballConfig) => void;
   flyballPreset: string;
   onFlyballPresetChange: (preset: string) => void;
   flyballWeights: number[];
   onFlyballWeightsChange: (weights: number[]) => void;
+  tirePsi: number;
+  onTirePsiChange: (psi: number) => void;
+  tireSize: TireSize;
+  onTireSizeChange: (size: TireSize) => void;
   riderWeight: number;
   onRiderWeightChange: (weight: number) => void;
   passengerWeight: number;
   onPassengerWeightChange: (weight: number) => void;
+  centerSpring: CenterSpring;
+  onCenterSpringChange: (spring: CenterSpring) => void;
+  clutchSpring: ClutchSpring;
+  onClutchSpringChange: (spring: ClutchSpring) => void;
+  engineCC: EngineCC;
+  onEngineCCChange: (cc: EngineCC) => void;
 }
 
 export default function ProfileSelector({
@@ -22,6 +34,8 @@ export default function ProfileSelector({
   onProfileChange,
   terrain,
   onTerrainChange,
+  windMode,
+  onWindModeChange,
   flyballConfig,
   onFlyballConfigChange,
   flyballPreset,
@@ -31,12 +45,37 @@ export default function ProfileSelector({
   riderWeight,
   onRiderWeightChange,
   passengerWeight,
-  onPassengerWeightChange
+  onPassengerWeightChange,
+  tirePsi,
+  onTirePsiChange,
+  tireSize,
+  onTireSizeChange,
+  centerSpring,
+  onCenterSpringChange,
+  clutchSpring,
+  onClutchSpringChange,
+  engineCC,
+  onEngineCCChange
 }: ProfileSelectorProps) {
   return (
     <div className="bg-gray-800 rounded-lg p-6 shadow-lg space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">CVT Profile</label>
+        <label className="block text-sm font-medium text-gray-300 mb-2">Engine Displacement (CC)</label>
+        <select
+          value={engineCC}
+          onChange={(e) => onEngineCCChange(e.target.value as EngineCC)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+        >
+          {Object.entries(ENGINE_CC_CONFIGS).map(([key, config]) => (
+            <option key={key} value={key}>
+              {key} - {config.description}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-2">Variator Design (Ramp Angle)</label>
         <select
           value={profile}
           onChange={(e) => onProfileChange(e.target.value as CvtProfile)}
@@ -51,7 +90,7 @@ export default function ProfileSelector({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">Flyball Configuration</label>
+        <label className="block text-sm font-medium text-gray-300 mb-2">Flyball / Roller Weights</label>
         <select
           value={flyballConfig}
           onChange={(e) => onFlyballConfigChange(e.target.value as FlyballConfig)}
@@ -96,17 +135,66 @@ export default function ProfileSelector({
         )}
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">Terrain Mode</label>
-        <select
-          value={terrain}
-          onChange={(e) => onTerrainChange(e.target.value as TerrainMode)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="flat">Flat - Normal conditions</option>
-          <option value="uphill">Uphill - Increased load</option>
-          <option value="downhill">Downhill - Assisted acceleration</option>
-        </select>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Center Spring</label>
+          <select
+            value={centerSpring}
+            onChange={(e) => onCenterSpringChange(e.target.value as CenterSpring)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+          >
+            {Object.entries(CENTER_SPRING_CONFIGS).map(([key, config]) => (
+              <option key={key} value={key}>
+                {key.toUpperCase()} - {config.description}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Clutch Springs</label>
+          <select
+            value={clutchSpring}
+            onChange={(e) => onClutchSpringChange(e.target.value as ClutchSpring)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+          >
+            {Object.entries(CLUTCH_SPRING_CONFIGS).map(([key, config]) => (
+              <option key={key} value={key}>
+                {key.toUpperCase()} - {config.description}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Terrain Mode</label>
+          <select
+            value={terrain}
+            onChange={(e) => onTerrainChange(e.target.value as TerrainMode)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="flat">Flat - Normal</option>
+            <option value="uphill">Uphill - Climbing</option>
+            <option value="downhill">Downhill - Descent</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Wind Simulation</label>
+          <select
+            value={windMode}
+            onChange={(e) => onWindModeChange(e.target.value as WindMode)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+          >
+            {Object.entries(WIND_FACTORS).map(([key, config]) => (
+              <option key={key} value={key}>
+                {config.description}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>
@@ -136,6 +224,48 @@ export default function ProfileSelector({
           onChange={(e) => onPassengerWeightChange(Number(e.target.value))}
           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
         />
+      </div>
+
+      <div className="pt-4 border-t border-gray-700">
+        <label className="block text-sm font-semibold text-blue-400 mb-4 uppercase">Tire & Friction Settings</label>
+        
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Tire Size / Profile</label>
+            <select
+              value={tireSize}
+              onChange={(e) => onTireSizeChange(e.target.value as TireSize)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+            >
+              {Object.entries(TIRE_CONFIGS).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.description.split(' - ')[0]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Tire PSI (Air Pressure)</label>
+            <div className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-center text-blue-400 font-bold">
+              {tirePsi} PSI
+            </div>
+          </div>
+        </div>
+
+        <input
+          type="range"
+          min="15"
+          max="45"
+          step="1"
+          value={tirePsi}
+          onChange={(e) => onTirePsiChange(Number(e.target.value))}
+          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mb-2"
+        />
+        <div className="flex justify-between text-[10px] text-gray-500 uppercase px-1">
+          <span>Soft (Grip)</span>
+          <span>Standard (30)</span>
+          <span>Hard (Speed)</span>
+        </div>
       </div>
     </div>
   );

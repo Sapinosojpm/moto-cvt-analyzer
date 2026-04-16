@@ -5,7 +5,7 @@ interface SpeedMeterProps {
 export default function SpeedMeter({ speed }: SpeedMeterProps) {
   const maxSpeed = 200; // km/h
   const percentage = (speed / maxSpeed) * 100;
-  const angle = (percentage / 100) * 180 - 90;
+  const angle = 180 + (percentage / 100) * 180;
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
@@ -18,6 +18,7 @@ export default function SpeedMeter({ speed }: SpeedMeterProps) {
             fill="none"
             stroke="#374151"
             strokeWidth="8"
+            className="transition-all duration-300 ease-out"
           />
           {/* Value arc */}
           <path
@@ -26,6 +27,7 @@ export default function SpeedMeter({ speed }: SpeedMeterProps) {
             stroke="#10B981"
             strokeWidth="8"
             strokeDasharray={`${(percentage / 100) * 188.4} 188.4`}
+            className="transition-all duration-300 ease-out"
           />
           {/* Needle */}
           <line
@@ -36,6 +38,7 @@ export default function SpeedMeter({ speed }: SpeedMeterProps) {
             stroke="#EF4444"
             strokeWidth="3"
             strokeLinecap="round"
+            className="transition-all duration-300 ease-out"
           />
           {/* Center dot */}
           <circle cx="100" cy="80" r="5" fill="#EF4444" />

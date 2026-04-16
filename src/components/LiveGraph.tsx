@@ -42,6 +42,7 @@ export default function LiveGraph({ history }: LiveGraphProps) {
             strokeWidth={2}
             name="RPM"
             dot={false}
+            isAnimationActive={false}
           />
           <Line
             type="monotone"
@@ -50,6 +51,7 @@ export default function LiveGraph({ history }: LiveGraphProps) {
             strokeWidth={2}
             name="Speed (km/h)"
             dot={false}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -19,6 +19,12 @@ export default function Dashboard() {
     setThrottle,
     terrain,
     setTerrain,
+    windMode,
+    setWindMode,
+    tirePsi,
+    setTirePsi,
+    tireSize,
+    setTireSize,
     profile,
     setProfile,
     flyballConfig,
@@ -31,7 +37,14 @@ export default function Dashboard() {
     setRiderWeight,
     passengerWeight,
     setPassengerWeight,
+    centerSpring,
+    setCenterSpring,
+    clutchSpring,
+    setClutchSpring,
+    engineCC,
+    setEngineCC,
     isRunning,
+    isShuttingDown,
     startSimulation,
     stopSimulation,
     sessionActive,
@@ -58,6 +71,8 @@ export default function Dashboard() {
             onProfileChange={setProfile}
             terrain={terrain}
             onTerrainChange={setTerrain}
+            windMode={windMode}
+            onWindModeChange={setWindMode}
             flyballConfig={flyballConfig}
             onFlyballConfigChange={setFlyballConfig}
             flyballPreset={flyballPreset}
@@ -68,11 +83,22 @@ export default function Dashboard() {
             onRiderWeightChange={setRiderWeight}
             passengerWeight={passengerWeight}
             onPassengerWeightChange={setPassengerWeight}
+            tirePsi={tirePsi}
+            onTirePsiChange={setTirePsi}
+            tireSize={tireSize}
+            onTireSizeChange={setTireSize}
+            centerSpring={centerSpring}
+            onCenterSpringChange={setCenterSpring}
+            clutchSpring={clutchSpring}
+            onClutchSpringChange={setClutchSpring}
+            engineCC={engineCC}
+            onEngineCCChange={setEngineCC}
           />
           <SimulationControls
             throttle={throttle}
             onThrottleChange={setThrottle}
             isRunning={isRunning}
+            isShuttingDown={isShuttingDown}
             onStartSimulation={startSimulation}
             onStopSimulation={stopSimulation}
             sessionActive={sessionActive}
@@ -89,10 +115,26 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <MetricsCard label="ELI" value={metrics.eli} />
-          <MetricsCard label="CER" value={metrics.cer} />
-          <MetricsCard label="AR" value={metrics.ar} />
-          <MetricsCard label="Slip Index" value={metrics.slip} />
+          <MetricsCard 
+            label="ELI" 
+            value={metrics.eli} 
+            description="Engine Load Index: Ratio of RPM to Speed. Higher values mean the engine is working harder under load." 
+          />
+          <MetricsCard 
+            label="CER" 
+            value={metrics.cer} 
+            description="CVT Efficiency Ratio: Speed achieved per 1000 RPM. Measures how effectively power is converted to output." 
+          />
+          <MetricsCard 
+            label="AR" 
+            value={metrics.ar} 
+            description="Acceleration Response: Rate of speed change relative to RPM shift. Indicates how snappier the takeoff is." 
+          />
+          <MetricsCard 
+            label="Slip Index" 
+            value={metrics.slip} 
+            description="Slip Index: Detects potential belt slippage. High slip means power is being lost instead of reaching the wheel." 
+          />
         </div>
 
         <LiveGraph history={history} />
