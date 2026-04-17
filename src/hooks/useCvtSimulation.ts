@@ -154,13 +154,14 @@ export function useCvtSimulation() {
 
     const params = paramsRef.current;
     
-    const config = PROFILE_CONFIGS[params.profile];
-    const terrainFactor = TERRAIN_FACTORS[params.terrain];
-    const centerSpringConfig = CENTER_SPRING_CONFIGS[params.centerSpring];
-    const clutchSpringConfig = CLUTCH_SPRING_CONFIGS[params.clutchSpring];
-    const engineConfig = ENGINE_CC_CONFIGS[params.engineCC];
-    const windConfig = WIND_FACTORS[params.windMode];
-    const tireConfig = TIRE_CONFIGS[params.tireSize];
+    // Safety check to prevent crashes during view transitions
+    const config = PROFILE_CONFIGS[params.profile] || PROFILE_CONFIGS.stock;
+    const terrainFactor = TERRAIN_FACTORS[params.terrain] || TERRAIN_FACTORS.flat;
+    const centerSpringConfig = CENTER_SPRING_CONFIGS[params.centerSpring] || CENTER_SPRING_CONFIGS.standard;
+    const clutchSpringConfig = CLUTCH_SPRING_CONFIGS[params.clutchSpring] || CLUTCH_SPRING_CONFIGS.standard;
+    const engineConfig = ENGINE_CC_CONFIGS[params.engineCC] || ENGINE_CC_CONFIGS['125cc'];
+    const windConfig = WIND_FACTORS[params.windMode] || WIND_FACTORS.none;
+    const tireConfig = TIRE_CONFIGS[params.tireSize] || TIRE_CONFIGS.standard;
 
     // Forced zero throttle if shutting down
     const effectiveThrottle = params.isShuttingDown ? 0 : params.throttle;

@@ -16,11 +16,11 @@ export type TerrainMode = 'flat' | 'uphill' | 'downhill';
 export type WindMode = 'tailwind' | 'none' | 'headwind' | 'strong_headwind';
 export type TireSize = 'low_profile' | 'standard' | 'oversize';
 
-export type CvtProfile = 'stock' | 'aggressive_ramp' | 'touring_ramp' | 'racing_setup';
+export type CvtProfile = 'stock' | 'aggressive_ramp' | 'touring_ramp' | 'racing_setup' | 'mtrt_v3' | 'project_fi';
 
 export type CenterSpring = 'standard' | '1000rpm' | '1500rpm' | '2000rpm';
 
-export type ClutchSpring = 'standard' | '1000rpm' | '1500rpm' | '2000rpm';
+export type ClutchSpring = 'standard' | '1000rpm' | '1200rpm' | '1500rpm' | '2000rpm';
 
 export type EngineCC = '110cc' | '125cc' | '150cc' | '160cc' | '200cc+';
 
@@ -65,6 +65,22 @@ export const PROFILE_CONFIGS: Record<CvtProfile, ProfileConfig> = {
     efficiency: 0.8,
     maxRpm: 10500,
     description: 'Maximum performance, requires frequent maintenance'
+  },
+  mtrt_v3: {
+    rpmGain: 1.35,
+    speedDelay: 0.75,
+    slipFactor: 1.1,
+    efficiency: 1.05,
+    maxRpm: 9500,
+    description: 'MTRT V3 - High performance daily setup'
+  },
+  project_fi: {
+    rpmGain: 1.1,
+    speedDelay: 0.9,
+    slipFactor: 0.8,
+    efficiency: 1.1,
+    maxRpm: 8500,
+    description: 'Project F.I. - Top speed and fuel efficiency focus'
   }
 };
 
@@ -106,6 +122,7 @@ export const CENTER_SPRING_CONFIGS: Record<CenterSpring, { stiffness: number; de
 export const CLUTCH_SPRING_CONFIGS: Record<ClutchSpring, { engagementOffset: number; description: string }> = {
   standard: { engagementOffset: 0, description: 'Standard engagement (~2200 RPM)' },
   '1000rpm': { engagementOffset: 500, description: 'Snappier takeoff (~2700 RPM)' },
+  '1200rpm': { engagementOffset: 700, description: 'Balance street engagement (~2900 RPM)' },
   '1500rpm': { engagementOffset: 1000, description: 'Aggressive takeoff (~3200 RPM)' },
   '2000rpm': { engagementOffset: 1500, description: 'Racing launch (~3700 RPM)' }
 };
@@ -187,11 +204,11 @@ export function getRecommendation(metrics: CvtMetrics, profile: CvtProfile, rpm:
   const isEngaging = rpm > 1500 && rpm < 3500;
 
   if (metrics.slip > thresholds.slipHigh && !isEngaging) {
-    return "CVT SLIPPING: Low friction detected. " + (profile === 'light_rollers' ? 'Add heavier rollers for better grip' : 'Check belt wear');
+    return "CVT SLIPPING: Low friction detected. " + (profile === 'aggressive_ramp' ? 'Add heavier rollers for better grip' : 'Check belt wear');
   } else if (isEngaging && metrics.slip > 0) {
     return "CLUTCH ENGAGING: Maintaining steady throttle for smooth takeoff";
   } else if (metrics.eli > thresholds.eliHigh) {
-    return "HIGH LOAD: Suggesting " + (profile === 'heavy_rollers' ? 'current heavy setup' : 'switching to heavy rollers') + " to improve ratio";
+    return "HIGH LOAD: Suggesting " + (profile === 'touring_ramp' ? 'current heavy setup' : 'switching to heavy rollers') + " to improve ratio";
   } else if (metrics.ar > thresholds.arHigh) {
     return "RACING SETUP: Fast response, high RPM gain - monitoring stability";
   } else if (metrics.cvtScore > 75) {

@@ -11,19 +11,17 @@ const badges = [
 
 export default function TechStackHeader() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
+    <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
       {badges.map((badge) => (
         <div 
           key={badge.name} 
-          className="flex items-center overflow-hidden rounded-md border border-gray-700 shadow-sm transition-all hover:scale-105"
+          className="group flex items-center overflow-hidden rounded-full border border-slate-800 bg-slate-900/50 backdrop-blur-sm shadow-xl transition-all hover:border-slate-700 hover:scale-105"
         >
-          <div className={`${badge.color} px-2 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5`}>
-            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[8px]">
-              {badge.icon}
-            </span>
+          <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 border-r border-slate-800 group-hover:text-white transition-colors`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${badge.color.split(' ')[0]} animate-pulse`} />
             {badge.name}
           </div>
-          <div className="bg-gray-800 px-2 py-1 text-[10px] font-mono text-yellow-500 border-l border-gray-700">
+          <div className="px-3 py-1 text-[9px] font-mono font-bold text-slate-500">
             {badge.version}
           </div>
         </div>

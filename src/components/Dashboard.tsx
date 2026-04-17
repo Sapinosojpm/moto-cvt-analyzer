@@ -83,7 +83,8 @@ export default function Dashboard() {
     rollerLife,
   } = useCvtSimulation();
 
-  const [activeTab, setActiveTab] = useState<'metrics' | 'graph' | 'community'>('graph');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'graph'>('graph');
+  const [mainView, setMainView] = useState<'simulation' | 'community'>('simulation');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -145,152 +146,184 @@ export default function Dashboard() {
         >
           
           <motion.header variants={itemVariants} className="text-center space-y-4 pt-10 lg:pt-0">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-[0.2em] md:tracking-[0.3em] uppercase drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              MotoCVT <span className="text-blue-500">Pro</span> <span className="hidden sm:inline">Analyzer</span>
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-[0.3em] md:tracking-[0.4em] uppercase drop-shadow-[0_0_30px_rgba(59,130,246,0.5)] flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+              <span>MOTOCVT</span> 
+              <span className="text-blue-500 bg-blue-500/10 px-4 py-1 rounded-sm border border-blue-500/20 italic">PRO</span> 
+              <span className="hidden lg:inline text-slate-500 text-xl font-light tracking-[0.8em]">ANALYZER</span>
             </h1>
-            <TechStackHeader />
+            
+            <div className="flex flex-col items-center gap-6">
+              <TechStackHeader />
+              
+              {/* Main View Switcher */}
+              <div className="flex bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl border border-slate-800 shadow-2xl">
+                <button 
+                  onClick={() => setMainView('simulation')}
+                  className={`px-8 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${mainView === 'simulation' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${mainView === 'simulation' ? 'bg-white animate-pulse' : 'bg-slate-700'}`} />
+                  Simulation
+                </button>
+                <button 
+                  onClick={() => setMainView('community')}
+                  className={`px-8 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${mainView === 'community' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${mainView === 'community' ? 'bg-white animate-pulse' : 'bg-slate-700'}`} />
+                  Community
+                </button>
+              </div>
+            </div>
           </motion.header>
 
-          {/* Primary Gauges Row */}
-          <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl relative group transition-all hover:border-slate-700">
-              <RpmGauge rpm={rpm} maxRpm={PROFILE_CONFIGS[profile].maxRpm} />
-              <div className="absolute top-2 right-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Real-time</div>
-            </div>
-            
-            <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl relative group transition-all hover:border-slate-700">
-              <SpeedMeter speed={speed} />
-              <div className="absolute top-2 right-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">KPH/MPH</div>
-            </div>
+          <AnimatePresence mode="wait">
+            {mainView === 'simulation' ? (
+              <motion.div 
+                key="simulation-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-8"
+              >
+                {/* Primary Gauges Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                  <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl relative group transition-all hover:border-slate-700">
+                    <RpmGauge rpm={rpm} maxRpm={(PROFILE_CONFIGS[profile] || PROFILE_CONFIGS.stock).maxRpm} />
+                    <div className="absolute top-2 right-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Real-time</div>
+                  </div>
+                  
+                  <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl relative group transition-all hover:border-slate-700">
+                    <SpeedMeter speed={speed} />
+                    <div className="absolute top-2 right-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">KPH/MPH</div>
+                  </div>
 
-            <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl relative group transition-all hover:border-slate-700">
-              <CvtScoreCard score={metrics.cvtScore} statusColor={statusColor} />
-              <div className="absolute top-2 right-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Efficiency</div>
-            </div>
-          </motion.div>
-
-          {/* Performance Data Tabs Section */}
-          <motion.div variants={itemVariants} className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/60">
-              <div className="flex items-center gap-6">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Performance Data</h3>
-                <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
-                  <button 
-                    onClick={() => setActiveTab('metrics')}
-                    className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'metrics' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    Metrics
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('graph')}
-                    className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'graph' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('community')}
-                    className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'community' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    Community
-                  </button>
+                  <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl relative group transition-all hover:border-slate-700">
+                    <CvtScoreCard score={metrics.cvtScore} statusColor={statusColor} />
+                    <div className="absolute top-2 right-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Efficiency</div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-[10px] font-mono text-slate-500">Live Stream Data</span>
-              </div>
-            </div>
 
-            <div className="p-6 h-[350px]">
-              <AnimatePresence mode="wait">
-                {activeTab === 'metrics' ? (
-                  <motion.div 
-                    key="metrics"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                  >
-                    <MetricsCard label="ELI" value={metrics.eli} description="Engine Load Index" />
-                    <MetricsCard label="CER" value={metrics.cer} description="CVT Efficiency Ratio" />
-                    <MetricsCard 
-                      label="Ratio" 
-                      value={history.length > 0 ? history[history.length - 1].ratio : 3.2} 
-                      description="Calculated CVT Gear Ratio" 
-                    />
-                    <MetricsCard 
-                      label="Fuel" 
-                      value={history.length > 0 ? history[history.length - 1].fuel : 0} 
-                      description="EST. L/100km Consumption" 
-                    />
-                    <MetricsCard label="Slip %" value={metrics.slip} description="Belt Slippage" />
-                  </motion.div>
-                 ) : activeTab === 'graph' ? (
-                   <motion.div
-                     key="graph"
-                     initial={{ opacity: 0, x: 20 }}
-                     animate={{ opacity: 1, x: 0 }}
-                     exit={{ opacity: 0, x: -20 }}
-                     className="h-full"
-                   >
-                     <LiveGraph history={history} />
-                   </motion.div>
-                 ) : (
-                  <motion.div 
-                    key="community"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="h-full overflow-y-auto pr-2 dashboard-scrollbar"
-                  >
-                    <CommunityView 
-                      currentSetup={{
-                        profile,
-                        flyballConfig,
-                        flyballWeights,
-                        centerSpring,
-                        clutchSpring,
-                        engineCC
-                      }}
-                      onApplySetup={(setup) => {
-                        setProfile(setup.profile);
-                        setFlyballConfig(setup.flyballConfig);
-                        setFlyballWeights(setup.flyballWeights);
-                        setCenterSpring(setup.centerSpring);
-                        setClutchSpring(setup.clutchSpring);
-                        setEngineCC(setup.engineCC);
-                        setActiveTab('graph');
-                      }}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+                {/* Performance Data Tabs Section */}
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/60">
+                    <div className="flex items-center gap-6">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Performance Data</h3>
+                      <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                        <button 
+                          onClick={() => setActiveTab('metrics')}
+                          className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'metrics' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
+                        >
+                          Metrics
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('graph')}
+                          className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'graph' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
+                        >
+                          Live Graph
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                      <span className="text-[10px] font-mono text-slate-500">Live Stream Data</span>
+                    </div>
+                  </div>
 
-          {/* Health Score & Recommendation Row */}
-          <motion.div variants={itemVariants} className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            <HealthScoreMetrics 
-              efficiency={metrics.cvtScore} 
-              slip={metrics.slip} 
-              stability={Math.max(0, Math.min(100, 100 - Math.abs(metrics.ar * 10)))} 
-            />
-            <RecommendationPanel recommendation={recommendation} />
-          </motion.div>
+                  <div className="p-6 h-[350px]">
+                    <AnimatePresence mode="wait">
+                      {activeTab === 'metrics' ? (
+                        <motion.div 
+                          key="metrics"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                        >
+                          <MetricsCard label="ELI" value={metrics.eli} description="Engine Load Index" />
+                          <MetricsCard label="CER" value={metrics.cer} description="CVT Efficiency Ratio" />
+                          <MetricsCard 
+                            label="Ratio" 
+                            value={history.length > 0 ? history[history.length - 1].ratio : 3.2} 
+                            description="Calculated CVT Gear Ratio" 
+                          />
+                          <MetricsCard 
+                            label="Fuel" 
+                            value={history.length > 0 ? history[history.length - 1].fuel : 0} 
+                            description="EST. L/100km Consumption" 
+                          />
+                          <MetricsCard label="Slip %" value={metrics.slip} description="Belt Slippage" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="graph"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="h-full"
+                        >
+                          <LiveGraph history={history} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
 
-          {/* Controls Section */}
-          <motion.div variants={itemVariants} className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <SimulationControls
-              throttle={throttle}
-              onThrottleChange={setThrottle}
-              isRunning={isRunning}
-              isShuttingDown={isShuttingDown}
-              onStartSimulation={startSimulation}
-              onStopSimulation={stopSimulation}
-              sessionActive={sessionActive}
-              onStartSession={startSession}
-              onStopSession={stopSession}
-            />
-          </motion.div>
+                {/* Health Score & Recommendation Row */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  <HealthScoreMetrics 
+                    efficiency={metrics.cvtScore} 
+                    slip={metrics.slip} 
+                    stability={Math.max(0, Math.min(100, 100 - Math.abs(metrics.ar * 10)))} 
+                  />
+                  <RecommendationPanel recommendation={recommendation} />
+                </div>
+
+                {/* Controls Section */}
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl">
+                  <SimulationControls
+                    throttle={throttle}
+                    onThrottleChange={setThrottle}
+                    isRunning={isRunning}
+                    isShuttingDown={isShuttingDown}
+                    onStartSimulation={startSimulation}
+                    onStopSimulation={stopSimulation}
+                    sessionActive={sessionActive}
+                    onStartSession={startSession}
+                    onStopSession={stopSession}
+                  />
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="community-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full min-h-[70vh]"
+              >
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                  <CommunityView 
+                    currentSetup={{
+                      profile,
+                      flyballConfig,
+                      flyballWeights,
+                      centerSpring,
+                      clutchSpring,
+                      engineCC
+                    }}
+                    onApplySetup={(setup) => {
+                      setProfile(setup.profile);
+                      setFlyballConfig(setup.flyballConfig);
+                      setFlyballWeights(setup.flyballWeights);
+                      setCenterSpring(setup.centerSpring);
+                      setClutchSpring(setup.clutchSpring);
+                      setEngineCC(setup.engineCC);
+                      setMainView('simulation');
+                    }}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Recent Sessions Table */}
           {sessions.length > 0 && (
@@ -353,7 +386,7 @@ export default function Dashboard() {
           background: #334155;
         }
       `}</style>
-      <FloatingThrottle throttle={throttle} onThrottleChange={setThrottle} />
+      <FloatingThrottle throttle={throttle} onThrottleChange={setThrottle} isRunning={isRunning} />
     </div>
   );
 }

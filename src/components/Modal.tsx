@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ModalProps {
@@ -11,8 +12,10 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  // Prevent scrolling when modal is open
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -32,10 +35,12 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
           {/* Backdrop - Darker and more blur */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -94,4 +99,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 }
+
