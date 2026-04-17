@@ -56,120 +56,127 @@ interface ConfigurationSidebarProps {
   onClose: () => void;
 }
 
-export default function ConfigurationSidebar({
-  profile,
-  onProfileChange,
-  terrain,
-  onTerrainChange,
-  windMode,
-  onWindModeChange,
-  flyballConfig,
-  onFlyballConfigChange,
-  flyballPreset,
-  onFlyballPresetChange,
-  flyballWeights,
-  onFlyballWeightsChange,
-  riderWeight,
-  onRiderWeightChange,
-  passengerWeight,
-  onPassengerWeightChange,
-  tirePsi,
-  onTirePsiChange,
-  tireSize,
-  onTireSizeChange,
-  centerSpring,
-  onCenterSpringChange,
-  clutchSpring,
-  onClutchSpringChange,
-  engineCC,
-  onEngineCCChange,
-  electricalLoad,
-  onElectricalLoadChange,
-  beltLife,
-  rollerLife,
-  isOpen,
-  onClose
-}: ConfigurationSidebarProps) {
-  const [isMounted, setIsMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsMounted(true);
-  }, []);
+export default function ConfigurationSidebar(props: ConfigurationSidebarProps) {
+  const { isOpen, onClose } = props;
 
   return (
     <>
+      {/* Mobile Sidebar & Backdrop */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] lg:hidden"
-          />
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] lg:hidden"
+            />
+            
+            <motion.aside 
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-80 bg-[#0B0F1A] border-r border-slate-800 h-screen overflow-y-auto z-[110] shadow-2xl lg:hidden flex flex-col dashboard-scrollbar"
+            >
+              <SidebarContent {...props} isMobile={true} />
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
 
-      <motion.aside 
-        initial={false}
-        animate={{ 
-          x: isOpen ? 0 : (isMounted && typeof window !== 'undefined' && window.innerWidth < 1024 ? -320 : 0),
-          opacity: 1
-        }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className={`fixed lg:relative inset-y-0 left-0 w-80 bg-slate-900 border-r border-slate-800 h-screen overflow-y-auto flex-shrink-0 dashboard-scrollbar z-[80] shadow-2xl lg:shadow-none`}
-      >
-        <div className="p-5 space-y-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
-              <h2 className="text-sm font-bold text-slate-200 uppercase tracking-widest">Configuration</h2>
-            </div>
-            <button 
-              onClick={onClose}
-              className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
+      {/* Static Desktop Sidebar */}
+      <aside className="hidden lg:flex flex-col w-80 bg-slate-900/50 border-r border-slate-800 h-screen overflow-y-auto flex-shrink-0 dashboard-scrollbar relative z-10">
+        <SidebarContent {...props} isMobile={false} />
+      </aside>
 
-        {/* Engine Section */}
-        <section className="space-y-3">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Engine (CC)</label>
-          <select
-            value={engineCC}
-            onChange={(e) => onEngineCCChange(e.target.value as EngineCC)}
-            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-md px-3 py-2 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+      <style jsx global>{`
+        .dashboard-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .dashboard-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .dashboard-scrollbar::-webkit-scrollbar-thumb {
+          background: #1e293b;
+          border-radius: 10px;
+        }
+        .dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #334155;
+        }
+      `}</style>
+    </>
+  );
+}
+
+function SidebarContent({ isMobile, ...props }: any) {
+  const {
+    profile, onProfileChange, terrain, onTerrainChange, windMode, onWindModeChange,
+    flyballConfig, onFlyballConfigChange, flyballPreset, onFlyballPresetChange,
+    flyballWeights, onFlyballWeightsChange, riderWeight, onRiderWeightChange,
+    passengerWeight, onPassengerWeightChange, tirePsi, onTirePsiChange,
+    tireSize, onTireSizeChange, centerSpring, onCenterSpringChange,
+    clutchSpring, onClutchSpringChange, engineCC, onEngineCCChange,
+    electricalLoad, onElectricalLoadChange, beltLife, rollerLife, onClose
+  } = props;
+
+  return (
+    <div className="p-6 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.6)]"></div>
+          <h2 className="text-xs font-black text-white uppercase tracking-[0.25em]">Configuration</h2>
+        </div>
+        {isMobile && (
+          <button 
+            onClick={onClose}
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all"
           >
-            {Object.entries(ENGINE_CC_CONFIGS).map(([key, config]) => (
-              <option key={key} value={key}>{key} - {config.description.split(' (')[0]}</option>
-            ))}
-          </select>
-        </section>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        )}
+      </div>
 
-        {/* Variator Section */}
-        <section className="space-y-3">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Variator Design</label>
-          <select
-            value={profile}
-            onChange={(e) => onProfileChange(e.target.value as CvtProfile)}
-            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-md px-3 py-2 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-          >
-            {Object.entries(PROFILE_CONFIGS).map(([key, config]) => (
-              <option key={key} value={key}>{key.replace('_', ' ').toUpperCase()} - {config.description.split(' - ')[0]}</option>
-            ))}
-          </select>
-        </section>
+      {/* Engine Section */}
+      <section className="space-y-4">
+        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Engine (CC)</label>
+        <select
+          value={engineCC}
+          onChange={(e) => onEngineCCChange(e.target.value as EngineCC)}
+          className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-4 py-3 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+        >
+          {Object.entries(ENGINE_CC_CONFIGS).map(([key, config]) => (
+            <option key={key} value={key}>{key} - {config.description.split(' (')[0]}</option>
+          ))}
+        </select>
+      </section>
 
-        {/* Flyballs Section */}
-        <section className="space-y-3">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Flyball / Roller Weight</label>
+      {/* Variator Section */}
+      <section className="space-y-4">
+        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Variator Design</label>
+        <select
+          value={profile}
+          onChange={(e) => onProfileChange(e.target.value as CvtProfile)}
+          className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-4 py-3 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+        >
+          {Object.entries(PROFILE_CONFIGS).map(([key, config]) => (
+            <option key={key} value={key}>{key.replace('_', ' ').toUpperCase()} - {config.description.split(' - ')[0]}</option>
+          ))}
+        </select>
+      </section>
+
+      {/* Flyballs Section */}
+      <section className="space-y-4">
+        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Flyball / Roller Weight</label>
+        <div className="space-y-3">
           <select
             value={flyballConfig}
             onChange={(e) => onFlyballConfigChange(e.target.value as FlyballConfig)}
-            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-md px-3 py-2 focus:ring-1 focus:ring-blue-500 outline-none transition-all mb-2"
+            className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-4 py-3 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer"
           >
             <option value="preset">Preset Configurations</option>
             <option value="custom">Custom (6 Flyballs)</option>
@@ -179,7 +186,7 @@ export default function ConfigurationSidebar({
             <select
               value={flyballPreset}
               onChange={(e) => onFlyballPresetChange(e.target.value)}
-              className="w-full bg-slate-800 border-2 border-slate-700 text-blue-400 text-xs font-medium rounded-md px-3 py-2 focus:ring-1 focus:ring-blue-500 outline-none"
+              className="w-full bg-blue-600/10 border border-blue-500/20 text-blue-400 text-xs font-bold rounded-xl px-4 py-3 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer"
             >
               {Object.entries(PRESET_FLYBALL_CONFIGS).map(([key, config]) => (
                 <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)} roller weight</option>
@@ -188,72 +195,79 @@ export default function ConfigurationSidebar({
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {flyballWeights.map((weight, index) => (
-                <input
-                  key={index}
-                  type="number"
-                  min="5"
-                  max="20"
-                  value={weight}
-                  onChange={(e) => {
-                    const newWeights = [...flyballWeights];
-                    newWeights[index] = Number(e.target.value);
-                    onFlyballWeightsChange(newWeights);
-                  }}
-                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-center text-xs rounded py-1.5 focus:ring-1 focus:ring-blue-500 outline-none"
-                />
+                <div key={index} className="space-y-1">
+                  <input
+                    type="number"
+                    min="5"
+                    max="20"
+                    value={weight}
+                    onChange={(e) => {
+                      const newWeights = [...flyballWeights];
+                      newWeights[index] = Number(e.target.value);
+                      onFlyballWeightsChange(newWeights);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-center text-xs font-mono rounded-xl py-2 focus:ring-1 focus:ring-blue-500 outline-none"
+                  />
+                </div>
               ))}
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        {/* Springs Section */}
-        <section className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Center Spring</label>
-            <select
-              value={centerSpring}
-              onChange={(e) => onCenterSpringChange(e.target.value as CenterSpring)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-[10px] rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 outline-none"
-            >
-              {Object.entries(CENTER_SPRING_CONFIGS).map(([key]) => (
-                <option key={key} value={key}>{key.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Clutch Springs</label>
-            <select
-              value={clutchSpring}
-              onChange={(e) => onClutchSpringChange(e.target.value as ClutchSpring)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-[10px] rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 outline-none"
-            >
-              {Object.entries(CLUTCH_SPRING_CONFIGS).map(([key]) => (
-                <option key={key} value={key}>{key.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
-        </section>
+      {/* Springs Section */}
+      <section className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
+          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Center Spring</label>
+          <select
+            value={centerSpring}
+            onChange={(e) => onCenterSpringChange(e.target.value as CenterSpring)}
+            className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-[10px] font-bold rounded-xl px-2 py-2.5 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
+          >
+            {Object.entries(CENTER_SPRING_CONFIGS).map(([key]) => (
+              <option key={key} value={key}>{key.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-3">
+          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Clutch Springs</label>
+          <select
+            value={clutchSpring}
+            onChange={(e) => onClutchSpringChange(e.target.value as ClutchSpring)}
+            className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-[10px] font-bold rounded-xl px-2 py-2.5 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
+          >
+            {Object.entries(CLUTCH_SPRING_CONFIGS).map(([key]) => (
+              <option key={key} value={key}>{key.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+      </section>
 
-        {/* Environment Section */}
-        <section className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+      {/* Environment Section */}
+      <section className="bg-slate-950/50 rounded-2xl border border-slate-800/50 p-4 space-y-4">
+        <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest block">Environment Simulation</label>
+        
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Terrain Mode</label>
-            <select
-              value={terrain}
-              onChange={(e) => onTerrainChange(e.target.value as TerrainMode)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-[10px] rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 outline-none"
-            >
-              <option value="flat">Flat - Normal</option>
-              <option value="uphill">Uphill</option>
-              <option value="downhill">Downhill</option>
-            </select>
+            <span className="text-[9px] text-slate-500 font-bold uppercase">Terrain</span>
+            <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800">
+              {(['flat', 'uphill', 'downhill'] as TerrainMode[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onTerrainChange(t)}
+                  className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${terrain === t ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Wind Simulation</label>
+            <span className="text-[9px] text-slate-500 font-bold uppercase">Wind Load</span>
             <select
               value={windMode}
               onChange={(e) => onWindModeChange(e.target.value as WindMode)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-[10px] rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 outline-none"
+              className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-[10px] font-bold rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
               <option value="none">No Wind</option>
               <option value="tailwind">Tailwind</option>
@@ -261,142 +275,124 @@ export default function ConfigurationSidebar({
               <option value="strong_headwind">Strong HW</option>
             </select>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Advanced Power Settings */}
-        <section className="space-y-4 pt-4 border-t border-slate-800">
-          <label className="text-[11px] font-bold text-blue-400 uppercase tracking-[0.2em] block">Advanced Power Dynamics</label>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Electrical Load (Accessories)</label>
-              <span className="text-[10px] font-mono text-blue-400">{electricalLoad}W</span>
-            </div>
-            <input
-              type="range" min="0" max="300" step="10" value={electricalLoad}
-              onChange={(e) => onElectricalLoadChange(Number(e.target.value))}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
-            <p className="text-[9px] text-slate-600 leading-tight">Parasitic crankshaft drag from alternator load.</p>
+      {/* Advanced Dynamics Section */}
+      <section className="space-y-6 pt-2">
+        <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block">Physical Dynamics</label>
+        
+        {/* Electrical Load */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center px-1">
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Electrical Drag</span>
+            <span className="text-[10px] font-mono font-bold text-purple-400">{electricalLoad}W</span>
           </div>
-        </section>
+          <input
+            type="range" min="0" max="300" step="10" value={electricalLoad}
+            onChange={(e) => onElectricalLoadChange(Number(e.target.value))}
+            className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-purple-500"
+          />
+        </div>
 
-        {/* Weight Section */}
-        <section className="space-y-4 pt-2 border-t border-slate-800">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Rider Weight</label>
-              <span className="text-[10px] font-mono text-blue-400">{riderWeight} KG</span>
+        {/* Weights */}
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Rider Weight</span>
+              <span className="text-[10px] font-mono font-bold text-blue-400">{riderWeight} KG</span>
             </div>
             <input
               type="range" min="40" max="120" value={riderWeight}
               onChange={(e) => onRiderWeightChange(Number(e.target.value))}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-blue-500"
             />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Passenger Weight</label>
-              <span className="text-[10px] font-mono text-blue-400">{passengerWeight} KG</span>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Passenger</span>
+              <span className="text-[10px] font-mono font-bold text-blue-400">{passengerWeight} KG</span>
             </div>
             <input
               type="range" min="0" max="100" step="5" value={passengerWeight}
               onChange={(e) => onPassengerWeightChange(Number(e.target.value))}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-blue-500"
             />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Tires Section */}
-        <section className="space-y-4 pt-4 border-t border-slate-800">
-          <label className="text-[11px] font-bold text-blue-400 uppercase tracking-[0.2em] block">Tire & Friction Settings</label>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Tire Size / Profile</label>
-              <select
-                value={tireSize}
-                onChange={(e) => onTireSizeChange(e.target.value as TireSize)}
-                className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-[10px] rounded px-2 py-1.5 outline-none"
-              >
-                {Object.entries(TIRE_CONFIGS).map(([key, config]) => (
-                  <option key={key} value={key}>{config.description.split(' (')[0]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider text-center block">Tire PSI</label>
-              <div className="bg-slate-900 border border-slate-700 rounded text-center py-1.5 text-xs font-bold text-blue-500 shadow-inner">
-                {tirePsi} PSI
-              </div>
-            </div>
+      {/* Tire Settings */}
+      <section className="space-y-4 pt-2">
+        <label className="text-[10px] font-black text-teal-400 uppercase tracking-widest block">Tire Dynamics</label>
+        <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-2">
+            <span className="text-[9px] text-slate-500 font-bold uppercase">Tire Profile</span>
+            <select
+              value={tireSize}
+              onChange={(e) => onTireSizeChange(e.target.value as TireSize)}
+              className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-[10px] font-bold rounded-xl px-3 py-2.5 outline-none cursor-pointer"
+            >
+              {Object.entries(TIRE_CONFIGS).map(([key, config]) => (
+                <option key={key} value={key}>{config.description.split(' (')[0]}</option>
+              ))}
+            </select>
           </div>
-
-          <input
-            type="range" min="15" max="45" value={tirePsi}
-            onChange={(e) => onTirePsiChange(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500 mt-2"
-          />
-        </section>
-
-        {/* Maintenance Monitoring */}
-        <section className="space-y-4 pt-4 border-t border-slate-800">
-          <label className="text-[11px] font-bold text-red-500/80 uppercase tracking-[0.2em] block">Maintenance Monitoring</label>
-          
           <div className="space-y-3">
-            <div className="space-y-1">
-              <div className="flex justify-between text-[9px] uppercase font-bold">
-                <span className="text-slate-500">Belt Health</span>
-                <span className={beltLife < 30 ? 'text-red-500' : 'text-slate-400'}>{Math.round(beltLife)}%</span>
-              </div>
-              <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-500 ${beltLife < 30 ? 'bg-red-500' : 'bg-blue-500'}`} 
-                  style={{ width: `${beltLife}%` }}
-                />
-              </div>
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Tire PSI</span>
+              <span className="text-[10px] font-mono font-bold text-teal-400">{tirePsi} PSI</span>
             </div>
-            
-            <div className="space-y-1">
-              <div className="flex justify-between text-[9px] uppercase font-bold">
-                <span className="text-slate-500">Roller Weights</span>
-                <span className={rollerLife < 30 ? 'text-red-500' : 'text-slate-400'}>{Math.round(rollerLife)}%</span>
-              </div>
-              <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-500 ${rollerLife < 30 ? 'bg-red-500' : 'bg-blue-500'}`} 
-                  style={{ width: `${rollerLife}%` }}
-                />
-              </div>
+            <input
+              type="range" min="15" max="45" value={tirePsi}
+              onChange={(e) => onTirePsiChange(Number(e.target.value))}
+              className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-teal-500"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Maintenance Status */}
+      <section className="bg-slate-950 rounded-2xl border border-slate-800 p-4 space-y-4">
+        <label className="text-[10px] font-black text-red-500 uppercase tracking-widest block">Maintenance Status</label>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-[9px] font-black uppercase">
+              <span className="text-slate-500">Belt Health</span>
+              <span className={beltLife < 30 ? 'text-red-500' : 'text-slate-400'}>{Math.round(beltLife)}%</span>
+            </div>
+            <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-700 ${beltLife < 30 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-blue-600'}`} 
+                style={{ width: `${beltLife}%` }}
+              />
             </div>
           </div>
           
-          <button 
-            className="w-full py-2 text-[9px] font-bold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 rounded border border-slate-700 transition-colors uppercase tracking-widest"
-            onClick={() => {
-              // I'll need to pass the reset handler later
-            }}
-          >
-            Full Service Reset
-          </button>
-        </section>
-      </div>
-
-      <style jsx>{`
-        .dashboard-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .dashboard-scrollbar::-webkit-scrollbar-track {
-          background: #0f172a;
-        }
-        .dashboard-scrollbar::-webkit-scrollbar-thumb {
-          background: #334155;
-          border-radius: 10px;
-        }
-        .dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #475569;
-        }
-      `}</style>
-      </motion.aside>
-    </>
+          <div className="space-y-2">
+            <div className="flex justify-between text-[9px] font-black uppercase">
+              <span className="text-slate-500">Roller Life</span>
+              <span className={rollerLife < 30 ? 'text-red-500' : 'text-slate-400'}>{Math.round(rollerLife)}%</span>
+            </div>
+            <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-700 ${rollerLife < 30 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-blue-600'}`} 
+                style={{ width: `${rollerLife}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <button 
+          className="w-full py-2.5 text-[9px] font-black text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all uppercase tracking-[0.2em]"
+          onClick={() => {
+            // Full service reset implementation
+          }}
+        >
+          Factory Service Reset
+        </button>
+      </section>
+    </div>
   );
 }
