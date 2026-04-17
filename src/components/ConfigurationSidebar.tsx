@@ -194,7 +194,7 @@ function SidebarContent({ isMobile, ...props }: any) {
             </select>
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              {flyballWeights.map((weight, index) => (
+              {flyballWeights.map((weight: number, index: number) => (
                 <div key={index} className="space-y-1">
                   <input
                     type="number"
